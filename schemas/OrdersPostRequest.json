@@ -21,7 +21,7 @@
           "delivery_hours": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "interval"
             }
           }
         },

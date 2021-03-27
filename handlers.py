@@ -1,8 +1,9 @@
 from pymongo import MongoClient
 from copy import deepcopy
-from interval_parser import parse_interval
+from datetime_utils import parse_interval
 from datetime import datetime
 from collections_db import Couriers, Orders
+from strict_rfc3339 import now_to_rfc3339_utcoffset as get_now
 
 COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
 
@@ -30,7 +31,7 @@ def assign_orders(courier_id, couriers_db: Couriers, orders_db: Orders):
 
     # Set assign time
     if len(assigned_orders) == 0:
-        assign_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        assign_time = get_now(integer=False)
     else:
         assign_time = courier['assign_time']
 

@@ -1,22 +1,23 @@
 import jsonschema
 import json
+from datetime_utils import ValidatorWithDatetime
 
 
 def validate_couriers(couriers_data):
     with open('schemas/CouriersPostRequest.json') as f:
-        couriers_post_schema = jsonschema.Draft7Validator(json.load(f))
+        couriers_post_schema = ValidatorWithDatetime(json.load(f))
     return _validate_post_items(couriers_data, couriers_post_schema, 'courier')
 
 
 def validate_orders(orders_data):
     with open('schemas/OrdersPostRequest.json') as f:
-        orders_post_schema = jsonschema.Draft7Validator(json.load(f))
+        orders_post_schema = ValidatorWithDatetime(json.load(f))
     return _validate_post_items(orders_data, orders_post_schema, 'order')
 
 
 def validate_update_courier(new_data):
     with open('schemas/CouriersUpdateRequest.json') as f:
-        courier_update_schema = jsonschema.Draft7Validator(json.load(f))
+        courier_update_schema = ValidatorWithDatetime(json.load(f))
 
     if courier_update_schema.is_valid(new_data):
         return new_data, 200
@@ -30,7 +31,7 @@ def validate_update_courier(new_data):
 
 def validate_assign_orders(courier_id_data, couriers_db):
     with open('schemas/OrdersAssignPostRequest.json') as f:
-        assign_orders_schema = jsonschema.Draft7Validator(json.load(f))
+        assign_orders_schema = ValidatorWithDatetime(json.load(f))
 
     for err in assign_orders_schema.iter_errors(courier_id_data):
         return {'validation_error': err.message}, 400
@@ -44,7 +45,7 @@ def validate_assign_orders(courier_id_data, couriers_db):
 
 def validate_complete_orders(complete_data, couriers_db, orders_db):
     with open('schemas/OrdersCompletePostRequest.json') as f:
-        complete_order_schema = jsonschema.Draft7Validator(json.load(f))
+        complete_order_schema = ValidatorWithDatetime(json.load(f))
 
     for err in complete_order_schema.iter_errors(complete_data):
         return {'validation_error': err.message}, 400

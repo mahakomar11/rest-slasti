@@ -18,7 +18,11 @@ orders_db = Orders(db['orders'])
 # TODO: валидация интервалов и дат
 # TODO: нормальные ответы
 # TODO: reassign orders when patch courier
+# TODO: подсчёт времени доставки
+# TODO: get courier rating
 # TODO: структура и названия
+# TODO: типы переменных
+# TODO: документация
 @app.route('/couriers', methods=['POST'])
 def add_couriers():
     if not request.is_json:

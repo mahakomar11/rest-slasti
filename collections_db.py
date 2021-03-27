@@ -1,8 +1,7 @@
 from pymongo import MongoClient, collection as MongoCollection
 from pymongo.errors import BulkWriteError
 from copy import deepcopy
-from interval_parser import parse_interval
-from datetime import datetime
+from datetime_utils import parse_interval
 
 
 class CollectionDB:
