@@ -1,0 +1,40 @@
+{
+  "title": "OrdersPostRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "order_id": {
+            "type": "integer"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "region": {
+            "type": "integer"
+          },
+          "delivery_hours": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "order_id",
+          "weight",
+          "region",
+          "delivery_hours"
+        ]
+      }
+    }
+  },
+  "required": [
+    "data"
+  ]
+}

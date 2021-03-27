@@ -1,0 +1,13 @@
+{
+  "title": "OrdersAssignPostRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "courier_id": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "courier_id"
+  ]
+}

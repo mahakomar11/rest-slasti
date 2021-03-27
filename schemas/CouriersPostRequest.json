@@ -1,0 +1,48 @@
+{
+  "title": "CouriersPostRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "courier_id": {
+            "type": "integer"
+          },
+          "courier_type": {
+            "type": "string",
+            "enum": [
+              "foot",
+              "bike",
+              "car"
+            ]
+          },
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "working_hours": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "courier_id",
+          "courier_type",
+          "regions",
+          "working_hours"
+        ]
+      }
+    }
+  },
+  "required": [
+    "data"
+  ]
+}

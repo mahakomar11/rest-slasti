@@ -1,0 +1,27 @@
+{
+  "title": "CouriersUpdateRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "courier_type": {
+      "type": "string",
+      "enum": [
+        "foot",
+        "bike",
+        "car"
+      ]
+    },
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "working_hours": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
