@@ -2,7 +2,7 @@ from jsonschema import Draft7Validator, TypeChecker, FormatChecker
 from jsonschema.validators import extend
 import json
 from datetime import time, datetime
-from strict_rfc3339 import now_to_rfc3339_utcoffset as get_now, validate_rfc3339
+from strict_rfc3339 import now_to_rfc3339_utcoffset as get_now, validate_rfc3339, rfc3339_to_timestamp
 
 
 def _str_to_sec(raw_t: str) -> int:
@@ -48,9 +48,23 @@ def _is_interval(checker, instance):
     return True
 
 
+def delta_time(time1, time2):
+    datetime1 = str_to_datetime(time1)
+    datetime2 = str_to_datetime(time2)
+    delta = datetime2 - datetime1
+    return delta.total_seconds()
+
+
+def str_to_datetime(t):
+    try:
+        return datetime.fromisoformat(t)
+    except ValueError:
+        return datetime.fromtimestamp(rfc3339_to_timestamp(t))
+
+
 type_checker = Draft7Validator.TYPE_CHECKER.redefine("interval", _is_interval).redefine("datetime", _is_datetime)
 
-ValidatorWithDatetime = extend(Draft7Validator, type_checker=type_checker)  # use strict-rfc3339
+ValidatorWithDatetime = extend(Draft7Validator, type_checker=type_checker)
 
 if __name__ == '__main__':
     schema = ValidatorWithDatetime(schema={"title": "schema",
@@ -65,4 +79,7 @@ if __name__ == '__main__':
     ans = schema.is_valid({'working_hours': '00:10-14:15', "assign_time": "2021-01-10T10:33:01.42Z"})
 
     time_now = get_now(integer=False)
+    assign_time = "2021-01-10T09:32:14.42Z"
+    complete_time = "2021-01-10T10:33:01.42Z"
+    delta = delta_time(assign_time, complete_time)
     print(time_now)

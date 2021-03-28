@@ -84,7 +84,7 @@ class Orders(CollectionDB):
                                         'region': {'$in': regions},
                                         'intervals':
                                             {'$elemMatch':
-                                                 {'start': {'$lt': work_end}, # TODO: переписать
+                                                 {'start': {'$lt': work_end},  # TODO: переписать
                                                   'end': {'$gt': work_start}
                                                   }
                                              }
@@ -92,7 +92,8 @@ class Orders(CollectionDB):
         fitted_orders = [{'id': res['_id'], 'weight': res['weight']} for res in results]
         return fitted_orders
 
-    def update_status(self, new_orders: list[dict], status: int, complete_time=None):
+    def update_status(self, new_orders: list[dict], status: int, complete_time=None, delivery_time=0,
+                      courier_type='foot'):
         orders_ids = [order['id'] for order in new_orders]
         if status != 2:
             self.collection.update_many({'_id': {'$in': orders_ids}},
@@ -100,4 +101,7 @@ class Orders(CollectionDB):
         else:
             self.collection.update_many({'_id': {'$in': orders_ids}},
                                         {'$set': {'status': status,
-                                                  'complete_time': complete_time}})
+                                                  'complete_time': complete_time,
+                                                  'delivery_time': delivery_time,
+                                                  'courier_type': courier_type
+                                                  }})

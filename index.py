@@ -1,6 +1,6 @@
 from flask import Flask, request, Response
 import json
-from handlers import post_couriers, post_orders, patch_courier, assign_orders, complete_order
+from handlers import post_couriers, post_orders, patch_courier, assign_orders, complete_order, get_courier
 from collections_db import Couriers, Orders
 from pymongo import MongoClient
 import validator
@@ -15,12 +15,12 @@ couriers_db = Couriers(db['couriers'])
 orders_db = Orders(db['orders'])
 
 
-# TODO: подсчёт времени доставки
-# TODO: get courier rating
+# TODO: валидировать существование courier_id
 # TODO: структура и названия
 # TODO: типы переменных
 # TODO: документация
 # TODO: исправить хранение даты и времени, и операции с ними
+# TODO: разобраться с assign time
 @app.route('/couriers', methods=['POST'])
 def add_couriers():
     if not request.is_json:
@@ -76,10 +76,15 @@ def post_order_complete():
 
     complete_data = request.get_json()
     data, status = validator.validate_complete_orders(complete_data, couriers_db, orders_db)
-    print(status)
     if status == 200:
         data = complete_order(data, couriers_db, orders_db)  # TODO: rename to post_complete_order
     return Response(json.dumps(data), status)
+
+
+@app.route('/couriers/<courier_id>', methods=['GET'])
+def get_courier_info(courier_id):
+    data = get_courier(courier_id, couriers_db, orders_db)
+    return Response(json.dumps(data), 200)
 
 
 if __name__ == "__main__":

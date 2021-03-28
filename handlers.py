@@ -1,11 +1,13 @@
 from pymongo import MongoClient
 from copy import deepcopy
-from datetime_utils import parse_interval
+from datetime_utils import parse_interval, delta_time, str_to_datetime
 from datetime import datetime
 from collections_db import Couriers, Orders
 from strict_rfc3339 import now_to_rfc3339_utcoffset as get_now
+from statistics import mean
 
 COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
+COURIER_COST = {'foot': 2, 'bike': 5, 'car': 9}
 
 
 def post_couriers(couriers_data, couriers_db: Couriers):
@@ -101,8 +103,14 @@ def complete_order(complete_data, couriers_db: Couriers, orders_db: Orders):
     order_id = complete_data['order_id']
     complete_time = complete_data['complete_time']
 
-    print(courier_id, order_id)
-    orders_db.update_status([{'id': order_id}], 2, complete_time=complete_time)
+    courier_type = couriers_db.get_item(courier_id)['courier_type']
+    delivery_time = _calculate_delivery_time(courier_id, complete_time, couriers_db, orders_db)
+    # Update data of completed order in DB
+    orders_db.update_status([{'id': order_id}], 2,
+                            complete_time=complete_time,
+                            delivery_time=delivery_time,
+                            courier_type=courier_type)
+    # Change status of order in couriers' DB
     couriers_db.move_order_to_completed(courier_id, order_id)
     return {'order_id': order_id}
 
@@ -164,6 +172,74 @@ def _replace_orders(placed_orders, capacity):
     return desc_orders
 
 
+def _calculate_delivery_time(courier_id, complete_time, couriers_db, orders_db):
+    courier = couriers_db.get_item(courier_id)
+
+    completed_orders_ids = get_ids(courier['completed_orders'])
+    assign_time = courier['assign_time']
+
+    if len(completed_orders_ids) == 0:
+        return delta_time(assign_time, complete_time)
+
+    completed_orders = orders_db.get_items_by_ids(completed_orders_ids)
+    delta = _find_previous_order(complete_time, completed_orders)
+
+    if delta is None:
+        return delta_time(assign_time, complete_time)
+    else:
+        return delta
+
+
+def _find_previous_order(complete_time, completed_orders):
+    complete_time = str_to_datetime(complete_time)
+    previous_time = max([str_to_datetime(order['complete_time']) for order in completed_orders])
+    if previous_time.date() != complete_time.date():
+        return None
+    else:
+        return (complete_time - previous_time).total_seconds()
+
+
+def get_courier(courier_id, couriers_db: Couriers, orders_db: Orders):
+    courier_id = int(courier_id)
+    courier = couriers_db.get_item(courier_id)
+
+    completed_orders_ids = get_ids(courier['completed_orders'])
+    # If no completed orders, no rating and earning returns
+    if len(completed_orders_ids) == 0:
+        return {'courier_id': courier_id,
+                'courier_type': courier['courier_type'],
+                'regions': courier['regions'],
+                'working_hours': courier['working_hours']}
+
+    completed_orders = orders_db.get_items_by_ids(completed_orders_ids)
+    rating, earning = _calculate_rating_and_earning(completed_orders)
+    return {'courier_id': courier_id,
+            'courier_type': courier['courier_type'],
+            'regions': courier['regions'],
+            'working_hours': courier['working_hours'],
+            'rating': rating,
+            'earning': earning}
+
+
+def _calculate_rating_and_earning(completed_orders):
+    # Calculate min of mean times through regions and earning
+    t_regions = {}
+    earning = 0
+    for order in completed_orders:
+        if order['region'] in t_regions:
+            t_regions[order['region']].append(order['delivery_time'])
+        else:
+            t_regions[order['region']] = [order['delivery_time']]
+        earning += 500 * COURIER_COST[order['courier_type']]
+    t_mean_regions = {reg: mean(times) for reg, times in t_regions.items()}
+    t_min = min(t_mean_regions)
+
+    # Calculate rating
+    rating = round((60 * 60 - min(t_min, 60 * 60)) / (60 * 60) * 5, 2)
+
+    return rating, earning
+
+
 if __name__ == '__main__':
     import json
 
@@ -189,10 +265,11 @@ if __name__ == '__main__':
     # patch_courier(1, {'working_hours': ['00:01-06:00']}, couriers_db, orders_db)
     # patch_courier(1, {'regions': [80]}, couriers_db, orders_db)
     # print(assigned_orders)
-    complete_data = {
-        'courier_id': 1,
-        'order_id': 1,
-        'complete_time': "2021-01-10T10:33:01.42Z"
-    }
-    complete_response = complete_order(complete_data, couriers_db, orders_db)
+    # complete_data = {
+    #     'courier_id': 1,
+    #     'order_id': 1,
+    #     'complete_time': "2021-01-10T10:33:01.42Z"
+    # }
+    # complete_response = complete_order(complete_data, couriers_db, orders_db)
+    courier_data = get_courier(1, couriers_db, orders_db)
     print('h')
