@@ -8,24 +8,20 @@ from strict_rfc3339 import now_to_rfc3339_utcoffset as get_now
 COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
 
 
-def post_couriers(couriers, couriers_db: Couriers):
-    posted_couriers = couriers_db.add_items(couriers)
-    # handle answer
-    return posted_couriers
+def post_couriers(couriers_data, couriers_db: Couriers):
+    posted_ids = couriers_db.add_items(couriers_data['data'])
+    return {'couriers': [{'id': i} for i in posted_ids]}
 
 
-def post_orders(orders, orders_db: Orders):
-    posted_orders = orders_db.add_items(orders)
-    return posted_orders
+def post_orders(orders_data, orders_db: Orders):
+    posted_ids = orders_db.add_items(orders_data['data'])
+    return {'orders': [{'id': i} for i in posted_ids]}
 
 
 def patch_courier(courier_id, new_data, couriers_db: Couriers, orders_db: Orders):
+    courier_id = int(courier_id)
     # Check if changed something that affects to assigned orders
-    if 'regions' in new_data or 'working_hours' in new_data or 'courier_type' in new_data:
-        courier = couriers_db.get_item(courier_id)
-    else:
-        couriers_db.edit_item(courier_id, new_data)
-        return couriers_db.get_item(courier_id)
+    courier = couriers_db.get_item(courier_id)
 
     # Get assigned orders' data and create copy of its list
     assigned_orders_ids = get_ids(courier['assigned_orders'])
@@ -52,10 +48,17 @@ def patch_courier(courier_id, new_data, couriers_db: Couriers, orders_db: Orders
     # Update status to 0 (not assigned) for orders that are not in new assigned orders
     dropped_orders = [{'id': order['id']} for order in assigned_orders if order not in new_assigned_orders]
     orders_db.update_status(dropped_orders, 0)
-    return new_data
+
+    # Get edited courier's data from DB
+    edited_courier = couriers_db.get_item(courier_id)
+    return {'courier_id': edited_courier['_id'],
+            'courier_type': edited_courier['courier_type'],
+            'regions': edited_courier['regions'],
+            'working_hours': edited_courier['working_hours']}
 
 
-def assign_orders(courier_id, couriers_db: Couriers, orders_db: Orders):
+def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
+    courier_id = courier_id_data['courier_id']
     courier = couriers_db.get_item(courier_id)
 
     assigned_orders_ids = get_ids(courier['assigned_orders'])  # ids of orders that already in courier's bag
@@ -87,14 +90,21 @@ def assign_orders(courier_id, couriers_db: Couriers, orders_db: Orders):
     if len(new_assigned_orders) != 0:
         orders_db.update_status(new_assigned_orders, 1)
 
-    return assigned_orders
+    # Get assigned orders from DB
+    courier = couriers_db.get_item(courier_id)
+    return {'orders': [{'id': o['id']} for o in courier['assigned_orders']],
+            'assign_time': courier['assign_time']}
 
 
-def complete_order(courier_id, order_id, complete_time, couriers_db: Couriers, orders_db: Orders):
+def complete_order(complete_data, couriers_db: Couriers, orders_db: Orders):
+    courier_id = complete_data['courier_id']
+    order_id = complete_data['order_id']
+    complete_time = complete_data['complete_time']
+
     print(courier_id, order_id)
     orders_db.update_status([{'id': order_id}], 2, complete_time=complete_time)
     couriers_db.move_order_to_completed(courier_id, order_id)
-    return order_id
+    return {'order_id': order_id}
 
 
 def get_ids(items):
@@ -166,17 +176,23 @@ if __name__ == '__main__':
     # i = couriers_db.get_item(7)
     # with open('cs_data.json') as f:
     #     couriers_data = json.load(f)
-    # post_couriers(couriers_data['data'], couriers_db)
+    # response_data = post_couriers(couriers_data, couriers_db)
     #
     # with open('od_data.json') as f:
     #     orders_data = json.load(f)
-    # post_orders(orders_data['data'], orders_db)
+    # response_data = post_orders(orders_data, orders_db)
+
     #
-    #
-    # patch_courier(1, {'courier_type': 'car'}, couriers_db, orders_db)
+    # patch_response = patch_courier(1, {'courier_type': 'car'}, couriers_db, orders_db)
     # assigned_orders = assign_orders(1, couriers_db, orders_db)
     # patch_courier(1, {'courier_type': 'foot'}, couriers_db, orders_db)
     # patch_courier(1, {'working_hours': ['00:01-06:00']}, couriers_db, orders_db)
-    patch_courier(1, {'regions': [80]}, couriers_db, orders_db)
+    # patch_courier(1, {'regions': [80]}, couriers_db, orders_db)
     # print(assigned_orders)
+    complete_data = {
+        'courier_id': 1,
+        'order_id': 1,
+        'complete_time': "2021-01-10T10:33:01.42Z"
+    }
+    complete_response = complete_order(complete_data, couriers_db, orders_db)
     print('h')

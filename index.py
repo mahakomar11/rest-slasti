@@ -15,7 +15,6 @@ couriers_db = Couriers(db['couriers'])
 orders_db = Orders(db['orders'])
 
 
-# TODO: нормальные ответы
 # TODO: подсчёт времени доставки
 # TODO: get courier rating
 # TODO: структура и названия
@@ -30,7 +29,7 @@ def add_couriers():
     couriers_data = request.get_json()
     data, status = validator.validate_couriers(couriers_data)
     if status == 201:
-        data = post_couriers(data['data'], couriers_db)
+        data = post_couriers(data, couriers_db)
     return Response(json.dumps(data), status)
 
 
@@ -42,7 +41,7 @@ def update_courier(courier_id):
     new_data = request.get_json()
     data, status = validator.validate_update_courier(new_data)
     if status == 200:
-        data = patch_courier(int(courier_id), new_data, couriers_db, orders_db)
+        data = patch_courier(courier_id, new_data, couriers_db, orders_db)
     return Response(json.dumps(data), status)
 
 
@@ -54,7 +53,7 @@ def add_orders():
     orders_data = request.get_json()
     data, status = validator.validate_orders(orders_data)
     if status == 201:
-        data = post_orders(data['data'], orders_db)
+        data = post_orders(data, orders_db)
     return Response(json.dumps(data), status)
 
 
@@ -66,7 +65,7 @@ def post_orders_assign():
     courier_id_data = request.get_json()
     data, status = validator.validate_assign_orders(courier_id_data, couriers_db)
     if status == 200:
-        data = assign_orders(courier_id_data['courier_id'], couriers_db, orders_db)  # TODO: rename to post_assign_orders
+        data = assign_orders(courier_id_data, couriers_db, orders_db)  # TODO: rename to post_assign_orders
     return Response(json.dumps(data), status)
 
 
@@ -79,9 +78,7 @@ def post_order_complete():
     data, status = validator.validate_complete_orders(complete_data, couriers_db, orders_db)
     print(status)
     if status == 200:
-        data = complete_order(data['courier_id'], data['order_id'], data['complete_time'],
-                              couriers_db,
-                              orders_db)  # TODO: rename to post_complete_order
+        data = complete_order(data, couriers_db, orders_db)  # TODO: rename to post_complete_order
     return Response(json.dumps(data), status)
 
 

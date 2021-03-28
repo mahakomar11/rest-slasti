@@ -10,11 +10,11 @@ class CollectionDB:
 
     def add_items(self, items: list[dict]) -> list:
         try:
-            self.collection.insert_many(items)
+            result = self.collection.insert_many(items)
         except BulkWriteError:
             return []
 
-        return items
+        return result.inserted_ids
 
     def edit_item(self, item_id: int, new_data: dict):
         self.collection.update_one({'_id': item_id}, {'$set': new_data})
