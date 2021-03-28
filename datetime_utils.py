@@ -6,12 +6,15 @@ from strict_rfc3339 import now_to_rfc3339_utcoffset as get_now, validate_rfc3339
 
 
 def _str_to_sec(raw_t: str) -> int:
+    # yeah, I had problems with time (in all senses)
     t: time = time.fromisoformat(raw_t)
     return t.hour * 60 + t.minute
 
 
 def parse_interval(interval: str) -> (str, str):
     start, end = [_str_to_sec(t) for t in interval.split('-')]
+    if end == 0:
+        end = _str_to_sec('23:59')
     return start, end
 
 

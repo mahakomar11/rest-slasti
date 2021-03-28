@@ -16,13 +16,12 @@ orders_db = Orders(db['orders'])
 
 
 # TODO: нормальные ответы
-# TODO: reassign orders when patch courier
 # TODO: подсчёт времени доставки
 # TODO: get courier rating
 # TODO: структура и названия
 # TODO: типы переменных
 # TODO: документация
-# TODO: исправить сравнение времени
+# TODO: исправить хранение даты и времени, и операции с ними
 @app.route('/couriers', methods=['POST'])
 def add_couriers():
     if not request.is_json:
