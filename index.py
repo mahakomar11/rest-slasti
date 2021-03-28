@@ -15,7 +15,6 @@ couriers_db = Couriers(db['couriers'])
 orders_db = Orders(db['orders'])
 
 
-# TODO: валидация интервалов и дат
 # TODO: нормальные ответы
 # TODO: reassign orders when patch courier
 # TODO: подсчёт времени доставки
@@ -23,6 +22,7 @@ orders_db = Orders(db['orders'])
 # TODO: структура и названия
 # TODO: типы переменных
 # TODO: документация
+# TODO: исправить сравнение времени
 @app.route('/couriers', methods=['POST'])
 def add_couriers():
     if not request.is_json:
@@ -43,7 +43,7 @@ def update_courier(courier_id):
     new_data = request.get_json()
     data, status = validator.validate_update_courier(new_data)
     if status == 200:
-        data = patch_courier(int(courier_id), new_data, couriers_db)
+        data = patch_courier(int(courier_id), new_data, couriers_db, orders_db)
     return Response(json.dumps(data), status)
 
 

@@ -57,8 +57,14 @@ class Orders(CollectionDB):
     def __init__(self, collection: MongoCollection):
         super().__init__(collection)
 
-    def get_items_by_ids(self, orders_ids: list[int]):
-        return self.collection.find({'_id': {'$in': orders_ids}})
+    def get_items_by_ids(self, orders_ids):
+        results = self.collection.find({'_id': {'$in': orders_ids}})
+        items = []
+        for res in results:
+            res['id'] = res['_id']
+            del res['_id']
+            items.append(res)
+        return items
 
     def add_items(self, items: list[dict]):
         orders = deepcopy(items)
@@ -73,13 +79,13 @@ class Orders(CollectionDB):
 
         return super().add_items(orders)
 
-    def get_fitted_orders(self, time_start: int, time_end: int, regions: list) -> list[dict]:
+    def get_fitted_orders(self, work_start: int, work_end: int, regions: list) -> list[dict]:
         results = self.collection.find({'status': 0,
                                         'region': {'$in': regions},
                                         'intervals':
                                             {'$elemMatch':
-                                                 {'start': {'$lte': time_start},
-                                                  'end': {'$gte': time_end}
+                                                 {'start': {'$lt': work_end}, # TODO: переписать
+                                                  'end': {'$gt': work_start}
                                                   }
                                              }
                                         }, {'_id': 1, 'weight': 1})
