@@ -103,11 +103,11 @@ class Orders(CollectionDB):
         orders_ids = [order['id'] for order in new_orders]
         if status != 2:
             self.collection.update_many({'_id': {'$in': orders_ids}},
-                                        {'$set': {'status': status}})
+                                        {'$set': {'status': status,
+                                                  'courier_type': courier_type}})
         else:
             self.collection.update_many({'_id': {'$in': orders_ids}},
                                         {'$set': {'status': status,
                                                   'complete_time': complete_time,
-                                                  'delivery_time': delivery_time,
-                                                  'courier_type': courier_type
+                                                  'delivery_time': delivery_time
                                                   }})

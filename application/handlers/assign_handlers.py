@@ -40,7 +40,7 @@ def patch_courier(courier_id, new_data: dict, couriers_db: Couriers, orders_db: 
 
     # Update status to 0 (not assigned) for orders that are not in new assigned orders
     dropped_orders = [{'id': order['id']} for order in assigned_orders if order not in new_assigned_orders]
-    orders_db.update_status(dropped_orders, 0)
+    orders_db.update_status(dropped_orders, 0, courier_type='')
 
     # Get edited courier's data from DB
     edited_courier = couriers_db.get_item(courier_id)
@@ -79,12 +79,12 @@ def assign_orders(courier_id_data: dict, couriers_db: Couriers, orders_db: Order
     new_assigned_orders = _place_orders(orders_to_place, capacity)
     assigned_orders = update_orders(assigned_orders, new_assigned_orders)
 
-    # Write assigned orders to DB (if it is empty list, it is already in DB)
+    # Write assigned orders to couriers' DB (if it is empty list, it is already in DB)
     if len(assigned_orders) != 0:
         couriers_db.write_assigned_orders(courier_id, assigned_orders, assign_time)
     # Update status to 1 for assigned orders in DB
     if len(new_assigned_orders) != 0:
-        orders_db.update_status(new_assigned_orders, 1)
+        orders_db.update_status(new_assigned_orders, 1, courier_type=courier['courier_type'])
 
     # Get assigned orders from DB
     courier = couriers_db.get_item(courier_id)

@@ -18,8 +18,7 @@ def complete_order(complete_data: dict, couriers_db: Couriers, orders_db: Orders
     # Update data of completed order in DB
     orders_db.update_status([{'id': order_id}], 2,
                             complete_time=complete_time,
-                            delivery_time=delivery_time,
-                            courier_type=courier_type)
+                            delivery_time=delivery_time)
     # Change status of order in couriers' DB
     couriers_db.move_order_to_completed(courier_id, order_id)
     return {'order_id': order_id}
