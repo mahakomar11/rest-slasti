@@ -9,7 +9,7 @@ from application import validator
 from pymongo.database import Database
 
 
-# TODO: структура и названия
+# TODO: структура
 # TODO: типы переменных
 # TODO: документация
 # TODO: разобраться с assign time

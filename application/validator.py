@@ -1,6 +1,14 @@
 import json
-from application.utils.datetime_utils import str_to_datetime, ValidatorWithDatetime
+from jsonschema import Draft7Validator, TypeChecker, FormatChecker
+from jsonschema.validators import extend
+from application.utils.datetime_utils import str_to_datetime, is_interval, is_datetime
 from application.collections_db import Couriers
+
+# Create validator extended with custom types 'interval' and 'datetime'
+type_checker = Draft7Validator.TYPE_CHECKER\
+    .redefine("interval", is_interval)\
+    .redefine("datetime", is_datetime)
+ValidatorWithDatetime = extend(Draft7Validator, type_checker=type_checker)
 
 
 def validate_couriers(couriers_data):

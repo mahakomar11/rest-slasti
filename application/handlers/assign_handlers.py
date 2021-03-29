@@ -1,5 +1,5 @@
 from copy import deepcopy
-from application.utils.datetime_utils import parse_interval
+from application.utils.datetime_utils import parse_intervals
 from datetime import datetime
 from application.collections_db import Couriers, Orders
 from application.utils.orders_utils import get_ids, update_orders, get_orders_weight
@@ -9,7 +9,6 @@ COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
 
 def patch_courier(courier_id, new_data, couriers_db: Couriers, orders_db: Orders):
     courier_id = int(courier_id)
-    # Check if changed something that affects to assigned orders
     courier = couriers_db.get_item(courier_id)
 
     # Get assigned orders' data and create copy of its list
@@ -61,7 +60,7 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
         assign_time = courier['assign_time']
 
     # Find orders that fit time intervals
-    intervals = [parse_interval(wh) for wh in courier['working_hours']]  # get intervals in seconds
+    intervals = parse_intervals(courier['working_hours'])  # get intervals in seconds
     orders_to_place = []
     for interval in intervals:
         fitted_orders = orders_db.get_fitted_orders(interval[0], interval[1], courier['regions'])
@@ -86,7 +85,7 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
 
 
 def _is_intervals_fitted(working_hours, delivery_intervals):
-    working_intervals = [parse_interval(wh) for wh in working_hours]
+    working_intervals = parse_intervals(working_hours)
 
     is_fitted = []
     for work_start, work_end in working_intervals:

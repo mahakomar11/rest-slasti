@@ -1,7 +1,7 @@
 from pymongo import collection as MongoCollection
 from pymongo.errors import BulkWriteError
 from copy import deepcopy
-from application.utils.datetime_utils import parse_interval
+from application.utils.datetime_utils import parse_intervals
 
 
 class CollectionDB:
@@ -72,7 +72,7 @@ class Orders(CollectionDB):
             order['_id'] = order['order_id']
             del order['order_id']
 
-            intervals = [parse_interval(dh) for dh in order['delivery_hours']]
+            intervals = parse_intervals(order['delivery_hours'])
             order['intervals'] = [{'start': start, 'end': end} for start, end in intervals]
 
             order['status'] = 0
