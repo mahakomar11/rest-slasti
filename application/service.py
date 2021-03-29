@@ -1,6 +1,9 @@
 from flask import Flask, request, Response
 import json
-from application.handlers.handlers import post_couriers, post_orders, patch_courier, assign_orders, complete_order, get_courier
+from application.handlers.post_handlers import post_couriers, post_orders
+from application.handlers.assign_handlers import assign_orders, patch_courier
+from application.handlers.complete_handler import complete_order
+from application.handlers.get_courier_handler import get_courier
 from application.collections_db import Couriers, Orders
 from application import validator
 from pymongo.database import Database

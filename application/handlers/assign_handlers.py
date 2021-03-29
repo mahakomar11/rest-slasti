@@ -1,22 +1,10 @@
-from pymongo import MongoClient
 from copy import deepcopy
-from application.utils.datetime_utils import parse_interval, str_to_datetime
+from application.utils.datetime_utils import parse_interval
 from datetime import datetime
 from application.collections_db import Couriers, Orders
-from statistics import mean
+from application.handlers.orders_utils import get_ids
 
 COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
-COURIER_COST = {'foot': 2, 'bike': 5, 'car': 9}
-
-
-def post_couriers(couriers_data, couriers_db: Couriers):
-    posted_ids = couriers_db.add_items(couriers_data['data'])
-    return {'couriers': [{'id': i} for i in posted_ids]}
-
-
-def post_orders(orders_data, orders_db: Orders):
-    posted_ids = orders_db.add_items(orders_data['data'])
-    return {'orders': [{'id': i} for i in posted_ids]}
 
 
 def patch_courier(courier_id, new_data, couriers_db: Couriers, orders_db: Orders):
@@ -97,49 +85,6 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
             'assign_time': courier['assign_time'].isoformat()}
 
 
-def complete_order(complete_data, couriers_db: Couriers, orders_db: Orders):
-    courier_id = complete_data['courier_id']
-    order_id = complete_data['order_id']
-    complete_time = str_to_datetime(complete_data['complete_time'])
-
-    courier_type = couriers_db.get_item(courier_id)['courier_type']
-    delivery_time = _calculate_delivery_time(courier_id, complete_time, couriers_db, orders_db)
-    # Update data of completed order in DB
-    orders_db.update_status([{'id': order_id}], 2,
-                            complete_time=complete_time,
-                            delivery_time=delivery_time,
-                            courier_type=courier_type)
-    # Change status of order in couriers' DB
-    couriers_db.move_order_to_completed(courier_id, order_id)
-    return {'order_id': order_id}
-
-
-def get_courier(courier_id, couriers_db: Couriers, orders_db: Orders):
-    courier_id = int(courier_id)
-    courier = couriers_db.get_item(courier_id)
-
-    completed_orders_ids = get_ids(courier['completed_orders'])
-    # If no completed orders, no rating and earning returns
-    if len(completed_orders_ids) == 0:
-        return {'courier_id': courier_id,
-                'courier_type': courier['courier_type'],
-                'regions': courier['regions'],
-                'working_hours': courier['working_hours']}
-
-    completed_orders = orders_db.get_items_by_ids(completed_orders_ids)
-    rating, earning = _calculate_rating_and_earning(completed_orders)
-    return {'courier_id': courier_id,
-            'courier_type': courier['courier_type'],
-            'regions': courier['regions'],
-            'working_hours': courier['working_hours'],
-            'rating': rating,
-            'earning': earning}
-
-
-def get_ids(items):
-    return [item['id'] for item in items]
-
-
 def _is_intervals_fitted(working_hours, delivery_intervals):
     working_intervals = [parse_interval(wh) for wh in working_hours]
 
@@ -166,7 +111,7 @@ def _get_orders_weight(orders):
 
 
 def _update_orders(orders, new_orders):
-    ids = [order['id'] for order in orders]
+    ids = [order['id'] for order in orders]  # TODO: get_ids
     for new in new_orders:
         if new['id'] not in ids:
             orders.append(new)
@@ -191,76 +136,3 @@ def _replace_orders(placed_orders, capacity):
         order = desc_orders.pop(0)
         capacity += order['weight']
     return desc_orders
-
-
-def _calculate_delivery_time(courier_id, complete_time: datetime, couriers_db, orders_db):
-    courier = couriers_db.get_item(courier_id)
-
-    completed_orders_ids = get_ids(courier['completed_orders'])
-    assign_time: datetime = courier['assign_time']
-
-    if len(completed_orders_ids) == 0:
-        return (complete_time - assign_time).total_seconds()
-
-    completed_orders = orders_db.get_items_by_ids(completed_orders_ids)
-    previous_time = _find_previous_time(assign_time, completed_orders)
-
-    return (complete_time - previous_time).total_seconds()
-
-
-def _find_previous_time(assign_time: datetime, completed_orders):
-    previous_order_time = max([order['complete_time'] for order in completed_orders])
-    return max(assign_time, previous_order_time)  # Return the nearest time
-
-
-def _calculate_rating_and_earning(completed_orders):
-    # Calculate min of mean times through regions and earning
-    t_regions = {}
-    earning = 0
-    for order in completed_orders:
-        if order['region'] in t_regions:
-            t_regions[order['region']].append(order['delivery_time'])
-        else:
-            t_regions[order['region']] = [order['delivery_time']]
-        earning += 500 * COURIER_COST[order['courier_type']]
-    t_mean_regions = {reg: mean(times) for reg, times in t_regions.items()}
-    t_min = min(t_mean_regions)
-
-    # Calculate rating
-    rating = round((60 * 60 - min(t_min, 60 * 60)) / (60 * 60) * 5, 2)
-
-    return rating, earning
-
-
-if __name__ == '__main__':
-    client = MongoClient('localhost', 27017)
-    db = client['slasti']
-
-    couriers_db = Couriers(db['couriers'])
-    orders_db = Orders(db['orders'])
-
-    assign_answer = assign_orders({'courier_id': 1}, couriers_db, orders_db)
-    # i = couriers_db.get_item(7)
-    # with open('cs_data.json') as f:
-    #     couriers_data = json.load(f)
-    # response_data = post_couriers(couriers_data, couriers_db)
-    #
-    # with open('od_data.json') as f:
-    #     orders_data = json.load(f)
-    # response_data = post_orders(orders_data, orders_db)
-
-    #
-    # patch_response = patch_courier(1, {'courier_type': 'car'}, couriers_db, orders_db)
-    # assigned_orders = assign_orders(1, couriers_db, orders_db)
-    # patch_courier(1, {'courier_type': 'foot'}, couriers_db, orders_db)
-    # patch_courier(1, {'working_hours': ['00:01-06:00']}, couriers_db, orders_db)
-    # patch_courier(1, {'regions': [80]}, couriers_db, orders_db)
-    # print(assigned_orders)
-    # complete_data = {
-    #     'courier_id': 1,
-    #     'order_id': 1,
-    #     'complete_time': "2021-01-10T10:33:01.42Z"
-    # }
-    # complete_response = complete_order(complete_data, couriers_db, orders_db)
-    # courier_data = get_courier(1, couriers_db, orders_db)
-    print('h')
