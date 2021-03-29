@@ -1,6 +1,6 @@
 import jsonschema
 import json
-from datetime_utils import ValidatorWithDatetime
+from datetime_utils import str_to_datetime, ValidatorWithDatetime
 from collections_db import Couriers
 
 
@@ -49,12 +49,13 @@ def validate_assign_orders(courier_id_data, couriers_db):
 
 
 def validate_complete_orders(complete_data, couriers_db, orders_db):
+    # Check if data matchs with the schema
     with open('schemas/OrdersCompletePostRequest.json') as f:
         complete_order_schema = ValidatorWithDatetime(json.load(f))
-
     for err in complete_order_schema.iter_errors(complete_data):
         return {'validation_error': err.message}, 400
 
+    # Check if courier_id and order_id exist
     courier_id = complete_data['courier_id']
     order_id = complete_data['order_id']
     if not couriers_db.get_item(courier_id):
@@ -62,18 +63,29 @@ def validate_complete_orders(complete_data, couriers_db, orders_db):
     elif not orders_db.get_item(order_id):
         return {'validation_error': f'There are no order with id {order_id}'}, 400
 
+    # Check status of the order
     order_status = orders_db.get_item(order_id)['status']
     if order_status == 0:
         return {'validation_error': f'order with id {order_id} is not assigned'}, 400
     elif order_status == 2:
         return {'validation_error': f'order with id {order_id} is already completed'}, 400
 
-    assigned_orders = couriers_db.get_item(courier_id)['assigned_orders']
+    # Check that complete time is later than assign time
+    courier = couriers_db.get_item(courier_id)
+    assign_time = courier['assign_time']
+    complete_time = str_to_datetime(complete_data['complete_time'])
+    if complete_time < assign_time:
+        return {'validation_error':
+                    f'\'complete_time\' must be later than \'assign_time\': {assign_time.isoformat()}'}, 400
+
+    # Check if the order is assigned to this courier
+    assigned_orders = courier['assigned_orders']
     print(assigned_orders)
     if {'id': order_id} not in assigned_orders:
-        return {'validation_error': f'order with id {order_id} is assigned to another courier'}, 400  # TODO: get another courier
-    else:
-        return complete_data, 200
+        return {
+                   'validation_error': f'order with id {order_id} is assigned to another courier'}, 400
+
+    return complete_data, 200
 
 
 def validate_courier_id(courier_id, couriers_db: Couriers):
@@ -107,7 +119,3 @@ def _validate_post_items(items_data, schema, item_name):
 
     validation_message = {f'{item_name}s': [{'id': i} for i in invalid_items_ids]}
     return {'validation_error': validation_message}, 400
-    
-    
-
-

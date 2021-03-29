@@ -68,7 +68,6 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
     # Set assign time
     if len(assigned_orders_ids) == 0:
         assigned_orders = []
-        # assign_time = get_now(integer=False)
         assign_time = datetime.now()
     else:
         assigned_orders = orders_db.get_items_by_ids(assigned_orders_ids)
@@ -96,7 +95,7 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
     # Get assigned orders from DB
     courier = couriers_db.get_item(courier_id)
     return {'orders': [{'id': o['id']} for o in courier['assigned_orders']],
-            'assign_time': courier['assign_time']}
+            'assign_time': courier['assign_time'].isoformat()}
 
 
 def complete_order(complete_data, couriers_db: Couriers, orders_db: Orders):
