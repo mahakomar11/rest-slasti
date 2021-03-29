@@ -1,9 +1,8 @@
 from pymongo import MongoClient
 from copy import deepcopy
-from datetime_utils import parse_interval, str_to_datetime
+from application.utils.datetime_utils import parse_interval, str_to_datetime
 from datetime import datetime
-from collections_db import Couriers, Orders
-from strict_rfc3339 import now_to_rfc3339_utcoffset as get_now
+from application.collections_db import Couriers, Orders
 from statistics import mean
 
 COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
@@ -234,8 +233,6 @@ def _calculate_rating_and_earning(completed_orders):
 
 
 if __name__ == '__main__':
-    import json
-
     client = MongoClient('localhost', 27017)
     db = client['slasti']
 

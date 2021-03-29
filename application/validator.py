@@ -1,17 +1,16 @@
-import jsonschema
 import json
-from datetime_utils import str_to_datetime, ValidatorWithDatetime
-from collections_db import Couriers
+from application.utils.datetime_utils import str_to_datetime, ValidatorWithDatetime
+from application.collections_db import Couriers
 
 
 def validate_couriers(couriers_data):
-    with open('schemas/CouriersPostRequest.json') as f:
+    with open('application/schemas/CouriersPostRequest.json') as f:
         couriers_post_schema = ValidatorWithDatetime(json.load(f))
     return _validate_post_items(couriers_data, couriers_post_schema, 'courier')
 
 
 def validate_orders(orders_data):
-    with open('schemas/OrdersPostRequest.json') as f:
+    with open('application/schemas/OrdersPostRequest.json') as f:
         orders_post_schema = ValidatorWithDatetime(json.load(f))
     return _validate_post_items(orders_data, orders_post_schema, 'order')
 
@@ -21,7 +20,7 @@ def validate_update_courier(new_data, courier_id, couriers_db: Couriers):
     if status == 400:
         return data, status
 
-    with open('schemas/CouriersUpdateRequest.json') as f:
+    with open('application/schemas/CouriersUpdateRequest.json') as f:
         courier_update_schema = ValidatorWithDatetime(json.load(f))
 
     if courier_update_schema.is_valid(new_data):
@@ -35,7 +34,7 @@ def validate_update_courier(new_data, courier_id, couriers_db: Couriers):
 
 
 def validate_assign_orders(courier_id_data, couriers_db):
-    with open('schemas/OrdersAssignPostRequest.json') as f:
+    with open('application/schemas/OrdersAssignPostRequest.json') as f:
         assign_orders_schema = ValidatorWithDatetime(json.load(f))
 
     for err in assign_orders_schema.iter_errors(courier_id_data):
@@ -50,7 +49,7 @@ def validate_assign_orders(courier_id_data, couriers_db):
 
 def validate_complete_orders(complete_data, couriers_db, orders_db):
     # Check if data matchs with the schema
-    with open('schemas/OrdersCompletePostRequest.json') as f:
+    with open('application/schemas/OrdersCompletePostRequest.json') as f:
         complete_order_schema = ValidatorWithDatetime(json.load(f))
     for err in complete_order_schema.iter_errors(complete_data):
         return {'validation_error': err.message}, 400
@@ -106,10 +105,13 @@ def _validate_post_items(items_data, schema, item_name):
         if list(err.path) == [] or err.path[-1] == 'data':
             return {'validation_error': err.message}, 400
 
-        invalid_item = items_data['data'][err.path[1]]
+        invalid_item = items_data['data'][err.path[1]]  # item, where error occurs
 
+        # If this item is not 'object'
         if not isinstance(invalid_item, dict):
             return {'validation_error': '\'data\' must contain only objects'}, 400
+
+        # If courier_id/order_id is not ok
         if f'{item_name}_id' not in invalid_item:
             return {'validation_error': f'\'{item_name}_id\' is a required property'}, 400
         if not isinstance(invalid_item[f'{item_name}_id'], int):
