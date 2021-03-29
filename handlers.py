@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from copy import deepcopy
-from datetime_utils import parse_interval, delta_time, str_to_datetime
+from datetime_utils import parse_interval, str_to_datetime
 from datetime import datetime
 from collections_db import Couriers, Orders
 from strict_rfc3339 import now_to_rfc3339_utcoffset as get_now
@@ -68,7 +68,8 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
     # Set assign time
     if len(assigned_orders_ids) == 0:
         assigned_orders = []
-        assign_time = get_now(integer=False)
+        # assign_time = get_now(integer=False)
+        assign_time = datetime.now()
     else:
         assigned_orders = orders_db.get_items_by_ids(assigned_orders_ids)
         assign_time = courier['assign_time']
@@ -101,7 +102,7 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
 def complete_order(complete_data, couriers_db: Couriers, orders_db: Orders):
     courier_id = complete_data['courier_id']
     order_id = complete_data['order_id']
-    complete_time = complete_data['complete_time']
+    complete_time = str_to_datetime(complete_data['complete_time'])
 
     courier_type = couriers_db.get_item(courier_id)['courier_type']
     delivery_time = _calculate_delivery_time(courier_id, complete_time, couriers_db, orders_db)
@@ -194,31 +195,24 @@ def _replace_orders(placed_orders, capacity):
     return desc_orders
 
 
-def _calculate_delivery_time(courier_id, complete_time, couriers_db, orders_db):
+def _calculate_delivery_time(courier_id, complete_time: datetime, couriers_db, orders_db):
     courier = couriers_db.get_item(courier_id)
 
     completed_orders_ids = get_ids(courier['completed_orders'])
-    assign_time = courier['assign_time']
+    assign_time: datetime = courier['assign_time']
 
     if len(completed_orders_ids) == 0:
-        return delta_time(assign_time, complete_time)
+        return (complete_time - assign_time).total_seconds()
 
     completed_orders = orders_db.get_items_by_ids(completed_orders_ids)
-    delta = _find_previous_order(complete_time, completed_orders)
+    previous_time = _find_previous_time(assign_time, completed_orders)
 
-    if delta is None:
-        return delta_time(assign_time, complete_time)
-    else:
-        return delta
+    return (complete_time - previous_time).total_seconds()
 
 
-def _find_previous_order(complete_time, completed_orders):
-    complete_time = str_to_datetime(complete_time)
-    previous_time = max([str_to_datetime(order['complete_time']) for order in completed_orders])
-    if previous_time.date() != complete_time.date():
-        return None
-    else:
-        return (complete_time - previous_time).total_seconds()
+def _find_previous_time(assign_time: datetime, completed_orders):
+    previous_order_time = max([order['complete_time'] for order in completed_orders])
+    return max(assign_time, previous_order_time)  # Return the nearest time
 
 
 def _calculate_rating_and_earning(completed_orders):
@@ -249,7 +243,7 @@ if __name__ == '__main__':
     couriers_db = Couriers(db['couriers'])
     orders_db = Orders(db['orders'])
 
-    courier = couriers_db.get_item(1)
+    assign_answer = assign_orders({'courier_id': 1}, couriers_db, orders_db)
     # i = couriers_db.get_item(7)
     # with open('cs_data.json') as f:
     #     couriers_data = json.load(f)
@@ -272,5 +266,5 @@ if __name__ == '__main__':
     #     'complete_time': "2021-01-10T10:33:01.42Z"
     # }
     # complete_response = complete_order(complete_data, couriers_db, orders_db)
-    courier_data = get_courier(1, couriers_db, orders_db)
+    # courier_data = get_courier(1, couriers_db, orders_db)
     print('h')
