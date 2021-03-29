@@ -2,6 +2,7 @@ from application.utils.datetime_utils import str_to_datetime
 from application.collections_db import Couriers, Orders
 from application.utils.orders_utils import get_ids
 from datetime import datetime
+from typing import List
 
 
 def complete_order(complete_data: dict, couriers_db: Couriers, orders_db: Orders):
@@ -45,7 +46,7 @@ def _calculate_delivery_time(courier_id: int, complete_time: datetime,
     return (complete_time - previous_time).total_seconds()
 
 
-def _find_previous_time(assign_time: datetime, completed_orders: list[dict]) -> datetime:
+def _find_previous_time(assign_time: datetime, completed_orders: List[dict]) -> datetime:
     """
     Get completed time of the last completed order or assign_time if it was later
     """

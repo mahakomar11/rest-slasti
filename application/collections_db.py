@@ -14,7 +14,7 @@ class CollectionDB:
     def __init__(self, collection: MongoCollection):
         self.collection = collection
 
-    def add_items(self, items: list[dict]) -> list[int]:
+    def add_items(self, items: List[dict]) -> List[int]:
         try:
             result = self.collection.insert_many(items)
         except BulkWriteError:
@@ -33,7 +33,7 @@ class Couriers(CollectionDB):
     def __init__(self, collection: MongoCollection):
         super().__init__(collection)
 
-    def add_items(self, items: List[dict]) -> list[int]:
+    def add_items(self, items: List[dict]) -> List[int]:
         couriers = deepcopy(items)
         for courier in couriers:
             courier['_id'] = courier['courier_id']
