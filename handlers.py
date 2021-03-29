@@ -115,6 +115,28 @@ def complete_order(complete_data, couriers_db: Couriers, orders_db: Orders):
     return {'order_id': order_id}
 
 
+def get_courier(courier_id, couriers_db: Couriers, orders_db: Orders):
+    courier_id = int(courier_id)
+    courier = couriers_db.get_item(courier_id)
+
+    completed_orders_ids = get_ids(courier['completed_orders'])
+    # If no completed orders, no rating and earning returns
+    if len(completed_orders_ids) == 0:
+        return {'courier_id': courier_id,
+                'courier_type': courier['courier_type'],
+                'regions': courier['regions'],
+                'working_hours': courier['working_hours']}
+
+    completed_orders = orders_db.get_items_by_ids(completed_orders_ids)
+    rating, earning = _calculate_rating_and_earning(completed_orders)
+    return {'courier_id': courier_id,
+            'courier_type': courier['courier_type'],
+            'regions': courier['regions'],
+            'working_hours': courier['working_hours'],
+            'rating': rating,
+            'earning': earning}
+
+
 def get_ids(items):
     return [item['id'] for item in items]
 
@@ -154,10 +176,10 @@ def _update_orders(orders, new_orders):
 
 def _place_orders(orders, capacity):
     # Greedy algorithm to fill courier's bag
-    desc_orders = sorted(orders, key=lambda order: order['weight'], reverse=True)
+    asc_orders = sorted(orders, key=lambda order: order['weight'])
     placed_orders = []
-    while capacity >= 0 and len(desc_orders) != 0:
-        order = desc_orders.pop(0)
+    while capacity >= 0 and len(asc_orders) != 0:
+        order = asc_orders.pop(0)
         if order['weight'] <= capacity:
             placed_orders.append(order)
             capacity -= order['weight']
@@ -197,28 +219,6 @@ def _find_previous_order(complete_time, completed_orders):
         return None
     else:
         return (complete_time - previous_time).total_seconds()
-
-
-def get_courier(courier_id, couriers_db: Couriers, orders_db: Orders):
-    courier_id = int(courier_id)
-    courier = couriers_db.get_item(courier_id)
-
-    completed_orders_ids = get_ids(courier['completed_orders'])
-    # If no completed orders, no rating and earning returns
-    if len(completed_orders_ids) == 0:
-        return {'courier_id': courier_id,
-                'courier_type': courier['courier_type'],
-                'regions': courier['regions'],
-                'working_hours': courier['working_hours']}
-
-    completed_orders = orders_db.get_items_by_ids(completed_orders_ids)
-    rating, earning = _calculate_rating_and_earning(completed_orders)
-    return {'courier_id': courier_id,
-            'courier_type': courier['courier_type'],
-            'regions': courier['regions'],
-            'working_hours': courier['working_hours'],
-            'rating': rating,
-            'earning': earning}
 
 
 def _calculate_rating_and_earning(completed_orders):
