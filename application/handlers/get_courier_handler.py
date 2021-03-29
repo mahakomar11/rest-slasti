@@ -1,6 +1,7 @@
 from application.utils.orders_utils import get_ids
 from application.collections_db import Couriers, Orders
 from statistics import mean
+from typing import List
 
 COURIER_COST = {'foot': 2, 'bike': 5, 'car': 9}
 
@@ -31,7 +32,7 @@ def get_courier(courier_id, couriers_db: Couriers, orders_db: Orders):
             'earning': earning}
 
 
-def _calculate_rating_and_earning(completed_orders: list[dict]) -> (float, int):
+def _calculate_rating_and_earning(completed_orders: List[dict]) -> (float, int):
     # Calculate min of mean times through regions and earning
     t_regions = {}
     earning = 0

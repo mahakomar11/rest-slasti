@@ -3,6 +3,7 @@ from application.utils.datetime_utils import parse_intervals
 from datetime import datetime
 from application.collections_db import Couriers, Orders
 from application.utils.orders_utils import get_ids, update_orders, get_orders_weight
+from typing import List
 
 COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
 
@@ -91,7 +92,7 @@ def assign_orders(courier_id_data: dict, couriers_db: Couriers, orders_db: Order
             'assign_time': courier['assign_time'].isoformat()}
 
 
-def _is_intervals_fitted(working_hours: list[str], delivery_intervals: list[dict]) -> bool:
+def _is_intervals_fitted(working_hours: List[str], delivery_intervals: List[dict]) -> bool:
     """
     Check if the order fit the courier by delivery hours
     """
@@ -105,7 +106,7 @@ def _is_intervals_fitted(working_hours: list[str], delivery_intervals: list[dict
     return any(is_fitted)
 
 
-def _get_courier_capacity(courier_type: str, assigned_orders: list[dict]) -> float:
+def _get_courier_capacity(courier_type: str, assigned_orders: List[dict]) -> float:
     """
     Calculate how much courier can lift, if he already get assigned_orders
     """
@@ -114,7 +115,7 @@ def _get_courier_capacity(courier_type: str, assigned_orders: list[dict]) -> flo
     return all_capacity - orders_weight
 
 
-def _place_orders(orders: list[dict], capacity) -> list[dict]:
+def _place_orders(orders: List[dict], capacity) -> List[dict]:
     """
     Greedy algorithm to fill courier's bag
     """
@@ -128,7 +129,7 @@ def _place_orders(orders: list[dict], capacity) -> list[dict]:
     return placed_orders
 
 
-def _replace_orders(placed_orders: list[dict], capacity) -> list[dict]:
+def _replace_orders(placed_orders: List[dict], capacity) -> List[dict]:
     """
     Greedy algorithm to release courier's bag
     """

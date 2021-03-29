@@ -3,12 +3,14 @@ from pymongo.errors import BulkWriteError
 from copy import deepcopy
 from application.utils.datetime_utils import parse_intervals
 from datetime import datetime
+from typing import List
 
 
 class CollectionDB:
     """
     Abstract class fo MongoDB Collection
     """
+
     def __init__(self, collection: MongoCollection):
         self.collection = collection
 
@@ -31,7 +33,7 @@ class Couriers(CollectionDB):
     def __init__(self, collection: MongoCollection):
         super().__init__(collection)
 
-    def add_items(self, items: list[dict]) -> list[int]:
+    def add_items(self, items: List[dict]) -> list[int]:
         couriers = deepcopy(items)
         for courier in couriers:
             courier['_id'] = courier['courier_id']
@@ -61,7 +63,7 @@ class Orders(CollectionDB):
     def __init__(self, collection: MongoCollection):
         super().__init__(collection)
 
-    def get_items_by_ids(self, orders_ids: list[int]) -> list[dict]:
+    def get_items_by_ids(self, orders_ids: List[int]) -> List[dict]:
         results = self.collection.find({'_id': {'$in': orders_ids}})
         items = []
         for res in results:
@@ -70,7 +72,7 @@ class Orders(CollectionDB):
             items.append(res)
         return items
 
-    def add_items(self, items: list[dict]) -> list[int]:
+    def add_items(self, items: List[dict]) -> List[int]:
         orders = deepcopy(items)
         for order in orders:
             order['_id'] = order['order_id']
@@ -83,12 +85,12 @@ class Orders(CollectionDB):
 
         return super().add_items(orders)
 
-    def get_fitted_orders(self, work_start: int, work_end: int, regions: list) -> list[dict]:
+    def get_fitted_orders(self, work_start: int, work_end: int, regions: list) -> List[dict]:
         results = self.collection.find({'status': 0,
                                         'region': {'$in': regions},
                                         'intervals':
                                             {'$elemMatch':
-                                                 {'start': {'$lt': work_end},  # TODO: переписать
+                                                 {'start': {'$lt': work_end},
                                                   'end': {'$gt': work_start}
                                                   }
                                              }
@@ -96,7 +98,7 @@ class Orders(CollectionDB):
         fitted_orders = [{'id': res['_id'], 'weight': res['weight']} for res in results]
         return fitted_orders
 
-    def update_status(self, new_orders: list[dict], status: int, complete_time=None, delivery_time=0,
+    def update_status(self, new_orders: List[dict], status: int, complete_time=None, delivery_time=0,
                       courier_type='foot'):
         orders_ids = [order['id'] for order in new_orders]
         if status != 2:
