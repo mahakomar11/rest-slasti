@@ -1,7 +1,8 @@
 from flask import Flask, request, Response
 import json
 from application.handlers.post_handlers import post_couriers, post_orders
-from application.handlers.assign_handlers import assign_orders, patch_courier
+from application.handlers.assign_handler import assign_orders
+from application.handlers.patch_courier_handler import patch_courier
 from application.handlers.complete_handler import complete_order
 from application.handlers.get_courier_handler import get_courier
 from application.collections_db import Couriers, Orders
@@ -9,9 +10,6 @@ from application import validator
 from pymongo.database import Database
 
 
-# TODO: сделать requirements
-# TODO: сделать readmi
-# TODO: посмотреть видео и исправить хэндлеры в соответствие с ним
 def make_app(db: Database) -> Flask:
     """
     Create service 'Slasti'

@@ -1,11 +1,9 @@
 from copy import deepcopy
 from application.utils.datetime_utils import parse_intervals
-from datetime import datetime
 from application.collections_db import Couriers, Orders
-from application.utils.orders_utils import get_ids, update_orders, get_orders_weight
+from application.utils.orders_utils import get_ids, get_orders_weight
+from application.handlers.assign_handler import COURIERS_CAPACITY
 from typing import List
-
-COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
 
 
 def patch_courier(courier_id, new_data: dict, couriers_db: Couriers, orders_db: Orders):
@@ -50,48 +48,6 @@ def patch_courier(courier_id, new_data: dict, couriers_db: Couriers, orders_db: 
             'working_hours': edited_courier['working_hours']}
 
 
-def assign_orders(courier_id_data: dict, couriers_db: Couriers, orders_db: Orders):
-    """
-    Find orders that fit by region, delivery hours and put max number of them to assigned_orders.
-    """
-    courier_id = courier_id_data['courier_id']
-    courier = couriers_db.get_item(courier_id)
-
-    assigned_orders_ids = get_ids(courier['assigned_orders'])  # ids of orders that already in courier's bag
-
-    # Set assign time
-    if len(assigned_orders_ids) == 0:
-        assigned_orders = []
-        assign_time = datetime.now()
-    else:
-        assigned_orders = orders_db.get_items_by_ids(assigned_orders_ids)
-        assign_time = courier['assign_time']
-
-    # Find orders that fit time intervals
-    intervals = parse_intervals(courier['working_hours'])  # get intervals in seconds
-    orders_to_place = []
-    for interval in intervals:
-        fitted_orders = orders_db.get_fitted_orders(interval[0], interval[1], courier['regions'])
-        orders_to_place = update_orders(orders_to_place, fitted_orders)
-
-    # Put all possible new orders to courier's bag
-    capacity = _get_courier_capacity(courier['courier_type'], assigned_orders)
-    new_assigned_orders = _place_orders(orders_to_place, capacity)
-    assigned_orders = update_orders(assigned_orders, new_assigned_orders)
-
-    # Write assigned orders to couriers' DB (if it is empty list, it is already in DB)
-    if len(assigned_orders) != 0:
-        couriers_db.write_assigned_orders(courier_id, assigned_orders, assign_time)
-    # Update status to 1 for assigned orders in DB
-    if len(new_assigned_orders) != 0:
-        orders_db.update_status(new_assigned_orders, 1, courier_type=courier['courier_type'])
-
-    # Get assigned orders from DB
-    courier = couriers_db.get_item(courier_id)
-    return {'orders': [{'id': o['id']} for o in courier['assigned_orders']],
-            'assign_time': courier['assign_time'].isoformat()}
-
-
 def _is_intervals_fitted(working_hours: List[str], delivery_intervals: List[dict]) -> bool:
     """
     Check if the order fit the courier by delivery hours
@@ -113,20 +69,6 @@ def _get_courier_capacity(courier_type: str, assigned_orders: List[dict]) -> flo
     all_capacity = COURIERS_CAPACITY[courier_type]
     orders_weight = get_orders_weight(assigned_orders)
     return all_capacity - orders_weight
-
-
-def _place_orders(orders: List[dict], capacity) -> List[dict]:
-    """
-    Greedy algorithm to fill courier's bag
-    """
-    asc_orders = sorted(orders, key=lambda order: order['weight'])
-    placed_orders = []
-    while capacity >= 0 and len(asc_orders) != 0:
-        order = asc_orders.pop(0)
-        if order['weight'] <= capacity:
-            placed_orders.append(order)
-            capacity -= order['weight']
-    return placed_orders
 
 
 def _replace_orders(placed_orders: List[dict], capacity) -> List[dict]:
