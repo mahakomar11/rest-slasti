@@ -15,7 +15,6 @@ couriers_db = Couriers(db['couriers'])
 orders_db = Orders(db['orders'])
 
 
-# TODO: валидировать существование courier_id
 # TODO: структура и названия
 # TODO: типы переменных
 # TODO: документация
@@ -39,7 +38,7 @@ def update_courier(courier_id):
         raise BadRequest('Content-Type must be application/json')
 
     new_data = request.get_json()
-    data, status = validator.validate_update_courier(new_data)
+    data, status = validator.validate_update_courier(new_data, courier_id, couriers_db)
     if status == 200:
         data = patch_courier(courier_id, new_data, couriers_db, orders_db)
     return Response(json.dumps(data), status)
@@ -83,7 +82,9 @@ def post_order_complete():
 
 @app.route('/couriers/<courier_id>', methods=['GET'])
 def get_courier_info(courier_id):
-    data = get_courier(courier_id, couriers_db, orders_db)
+    data, status = validator.validate_courier_id(courier_id, couriers_db)
+    if status == 200:
+        data = get_courier(courier_id, couriers_db, orders_db)
     return Response(json.dumps(data), 200)
 
 

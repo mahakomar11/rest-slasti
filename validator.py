@@ -1,6 +1,7 @@
 import jsonschema
 import json
 from datetime_utils import ValidatorWithDatetime
+from collections_db import Couriers
 
 
 def validate_couriers(couriers_data):
@@ -15,7 +16,11 @@ def validate_orders(orders_data):
     return _validate_post_items(orders_data, orders_post_schema, 'order')
 
 
-def validate_update_courier(new_data):
+def validate_update_courier(new_data, courier_id, couriers_db: Couriers):
+    data, status = validate_courier_id(courier_id, couriers_db)
+    if status == 400:
+        return data, status
+
     with open('schemas/CouriersUpdateRequest.json') as f:
         courier_update_schema = ValidatorWithDatetime(json.load(f))
 
@@ -69,6 +74,14 @@ def validate_complete_orders(complete_data, couriers_db, orders_db):
         return {'validation_error': f'order with id {order_id} is assigned to another courier'}, 400  # TODO: get another courier
     else:
         return complete_data, 200
+
+
+def validate_courier_id(courier_id, couriers_db: Couriers):
+    courier_id = int(courier_id)
+    if not couriers_db.get_item(courier_id):
+        return {'validation_error': f'There are no courier with id {courier_id}'}, 400
+    else:
+        return {}, 200
 
 
 def _validate_post_items(items_data, schema, item_name):

@@ -249,6 +249,7 @@ if __name__ == '__main__':
     couriers_db = Couriers(db['couriers'])
     orders_db = Orders(db['orders'])
 
+    courier = couriers_db.get_item(1)
     # i = couriers_db.get_item(7)
     # with open('cs_data.json') as f:
     #     couriers_data = json.load(f)
