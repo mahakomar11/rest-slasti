@@ -7,7 +7,11 @@ from application.utils.orders_utils import get_ids, update_orders, get_orders_we
 COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
 
 
-def patch_courier(courier_id, new_data, couriers_db: Couriers, orders_db: Orders):
+def patch_courier(courier_id, new_data: dict, couriers_db: Couriers, orders_db: Orders):
+    """
+    Change data for courier with courier_id and remove orders from assigned orders,
+    if they don't fit by region, delivery hours or weight anymore
+    """
     courier_id = int(courier_id)
     courier = couriers_db.get_item(courier_id)
 
@@ -45,7 +49,10 @@ def patch_courier(courier_id, new_data, couriers_db: Couriers, orders_db: Orders
             'working_hours': edited_courier['working_hours']}
 
 
-def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
+def assign_orders(courier_id_data: dict, couriers_db: Couriers, orders_db: Orders):
+    """
+    Find orders that fit by region, delivery hours and put max number of them to assigned_orders.
+    """
     courier_id = courier_id_data['courier_id']
     courier = couriers_db.get_item(courier_id)
 
@@ -84,7 +91,10 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
             'assign_time': courier['assign_time'].isoformat()}
 
 
-def _is_intervals_fitted(working_hours, delivery_intervals):
+def _is_intervals_fitted(working_hours: list[str], delivery_intervals: list[dict]) -> bool:
+    """
+    Check if the order fit the courier by delivery hours
+    """
     working_intervals = parse_intervals(working_hours)
 
     is_fitted = []
@@ -95,14 +105,19 @@ def _is_intervals_fitted(working_hours, delivery_intervals):
     return any(is_fitted)
 
 
-def _get_courier_capacity(courier_type, assigned_orders):
+def _get_courier_capacity(courier_type: str, assigned_orders: list[dict]) -> float:
+    """
+    Calculate how much courier can lift, if he already get assigned_orders
+    """
     all_capacity = COURIERS_CAPACITY[courier_type]
     orders_weight = get_orders_weight(assigned_orders)
     return all_capacity - orders_weight
 
 
-def _place_orders(orders, capacity):
-    # Greedy algorithm to fill courier's bag
+def _place_orders(orders: list[dict], capacity) -> list[dict]:
+    """
+    Greedy algorithm to fill courier's bag
+    """
     asc_orders = sorted(orders, key=lambda order: order['weight'])
     placed_orders = []
     while capacity >= 0 and len(asc_orders) != 0:
@@ -113,7 +128,10 @@ def _place_orders(orders, capacity):
     return placed_orders
 
 
-def _replace_orders(placed_orders, capacity):
+def _replace_orders(placed_orders: list[dict], capacity) -> list[dict]:
+    """
+    Greedy algorithm to release courier's bag
+    """
     desc_orders = sorted(placed_orders, key=lambda order: order['weight'], reverse=True)
     while capacity < 0 and len(desc_orders) != 0:
         order = desc_orders.pop(0)

@@ -2,13 +2,17 @@ from pymongo import collection as MongoCollection
 from pymongo.errors import BulkWriteError
 from copy import deepcopy
 from application.utils.datetime_utils import parse_intervals
+from datetime import datetime
 
 
 class CollectionDB:
+    """
+    Abstract class fo MongoDB Collection
+    """
     def __init__(self, collection: MongoCollection):
         self.collection = collection
 
-    def add_items(self, items: list[dict]) -> list:
+    def add_items(self, items: list[dict]) -> list[int]:
         try:
             result = self.collection.insert_many(items)
         except BulkWriteError:
@@ -27,7 +31,7 @@ class Couriers(CollectionDB):
     def __init__(self, collection: MongoCollection):
         super().__init__(collection)
 
-    def add_items(self, items: list[dict]):
+    def add_items(self, items: list[dict]) -> list[int]:
         couriers = deepcopy(items)
         for courier in couriers:
             courier['_id'] = courier['courier_id']
@@ -38,7 +42,7 @@ class Couriers(CollectionDB):
 
         return super().add_items(couriers)
 
-    def write_assigned_orders(self, courier_id: int, orders: list, assign_time):
+    def write_assigned_orders(self, courier_id: int, orders: list, assign_time: datetime):
         self.edit_item(courier_id, {'assigned_orders': [{'id': order['id']} for order in orders],
                                     'assign_time': assign_time})
 
@@ -57,7 +61,7 @@ class Orders(CollectionDB):
     def __init__(self, collection: MongoCollection):
         super().__init__(collection)
 
-    def get_items_by_ids(self, orders_ids):
+    def get_items_by_ids(self, orders_ids: list[int]) -> list[dict]:
         results = self.collection.find({'_id': {'$in': orders_ids}})
         items = []
         for res in results:
@@ -66,7 +70,7 @@ class Orders(CollectionDB):
             items.append(res)
         return items
 
-    def add_items(self, items: list[dict]):
+    def add_items(self, items: list[dict]) -> list[int]:
         orders = deepcopy(items)
         for order in orders:
             order['_id'] = order['order_id']

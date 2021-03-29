@@ -4,7 +4,10 @@ from application.utils.orders_utils import get_ids
 from datetime import datetime
 
 
-def complete_order(complete_data, couriers_db: Couriers, orders_db: Orders):
+def complete_order(complete_data: dict, couriers_db: Couriers, orders_db: Orders):
+    """
+    Move order with id=complete_data['order_id'] from assigned_orders to completed_orders and change its status
+    """
     courier_id = complete_data['courier_id']
     order_id = complete_data['order_id']
     complete_time = str_to_datetime(complete_data['complete_time'])
@@ -21,12 +24,18 @@ def complete_order(complete_data, couriers_db: Couriers, orders_db: Orders):
     return {'order_id': order_id}
 
 
-def _calculate_delivery_time(courier_id, complete_time: datetime, couriers_db, orders_db):
+def _calculate_delivery_time(courier_id: int, complete_time: datetime,
+                             couriers_db: Couriers, orders_db: Orders) -> float:
+    """
+    Return delta between complete_time of order with order_id and complete_time of previous order or assign time
+    (if new assigning occurs after the last completed order)
+    """
     courier = couriers_db.get_item(courier_id)
 
     completed_orders_ids = get_ids(courier['completed_orders'])
     assign_time: datetime = courier['assign_time']
 
+    # If there are no completed orders, return delta with assign time
     if len(completed_orders_ids) == 0:
         return (complete_time - assign_time).total_seconds()
 
@@ -36,6 +45,9 @@ def _calculate_delivery_time(courier_id, complete_time: datetime, couriers_db, o
     return (complete_time - previous_time).total_seconds()
 
 
-def _find_previous_time(assign_time: datetime, completed_orders):
+def _find_previous_time(assign_time: datetime, completed_orders: list[dict]) -> datetime:
+    """
+    Get completed time of the last completed order or assign_time if it was later
+    """
     previous_order_time = max([order['complete_time'] for order in completed_orders])
-    return max(assign_time, previous_order_time)  # Return the nearest time
+    return max(assign_time, previous_order_time)

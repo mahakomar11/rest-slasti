@@ -2,28 +2,34 @@ import json
 from jsonschema import Draft7Validator, TypeChecker, FormatChecker
 from jsonschema.validators import extend
 from application.utils.datetime_utils import str_to_datetime, is_interval, is_datetime
-from application.collections_db import Couriers
+from application.collections_db import Couriers, Orders
+from flask import Response
 
 # Create validator extended with custom types 'interval' and 'datetime'
-type_checker = Draft7Validator.TYPE_CHECKER\
-    .redefine("interval", is_interval)\
+type_checker = Draft7Validator.TYPE_CHECKER \
+    .redefine("interval", is_interval) \
     .redefine("datetime", is_datetime)
 ValidatorWithDatetime = extend(Draft7Validator, type_checker=type_checker)
 
+# Response for not application/json headers
+bad_header = Response(json.dumps({'error': 'Content-Type must be application/json'}), 400,
+                      headers={'Content-Type': 'application/json'})
 
-def validate_couriers(couriers_data):
+
+def validate_couriers(couriers_data: dict) -> (dict, int):
     with open('application/schemas/CouriersPostRequest.json') as f:
         couriers_post_schema = ValidatorWithDatetime(json.load(f))
     return _validate_post_items(couriers_data, couriers_post_schema, 'courier')
 
 
-def validate_orders(orders_data):
+def validate_orders(orders_data: dict) -> (dict, int):
     with open('application/schemas/OrdersPostRequest.json') as f:
         orders_post_schema = ValidatorWithDatetime(json.load(f))
     return _validate_post_items(orders_data, orders_post_schema, 'order')
 
 
-def validate_update_courier(new_data, courier_id, couriers_db: Couriers):
+def validate_update_courier(new_data: dict, courier_id, couriers_db: Couriers) -> (dict, int):
+    # Check existing of courier_id in DB
     data, status = validate_courier_id(courier_id, couriers_db)
     if status == 400:
         return data, status
@@ -41,13 +47,23 @@ def validate_update_courier(new_data, courier_id, couriers_db: Couriers):
     return {'validation_error': {'messages': error_messages}}, 400
 
 
-def validate_assign_orders(courier_id_data, couriers_db):
+def validate_courier_id(courier_id, couriers_db: Couriers) -> (dict, int):
+    """Check if courier_id exists in couriers_db"""
+    courier_id = int(courier_id)
+    if not couriers_db.get_item(courier_id):
+        return {'validation_error': f'There are no courier with id {courier_id}'}, 400
+    else:
+        return {}, 200
+
+
+def validate_assign_orders(courier_id_data: dict, couriers_db: Couriers) -> (dict, int):
     with open('application/schemas/OrdersAssignPostRequest.json') as f:
         assign_orders_schema = ValidatorWithDatetime(json.load(f))
 
     for err in assign_orders_schema.iter_errors(courier_id_data):
         return {'validation_error': err.message}, 400
 
+    # Check if courier_id in DB
     courier_id = courier_id_data['courier_id']
     if couriers_db.get_item(courier_id):
         return courier_id_data, 200
@@ -55,8 +71,8 @@ def validate_assign_orders(courier_id_data, couriers_db):
         return {'validation_error': f'There are no courier with id {courier_id}'}, 400
 
 
-def validate_complete_orders(complete_data, couriers_db, orders_db):
-    # Check if data matchs with the schema
+def validate_complete_orders(complete_data: dict, couriers_db: Couriers, orders_db: Orders) -> (dict, int):
+    # Check if data matches the schema
     with open('application/schemas/OrdersCompletePostRequest.json') as f:
         complete_order_schema = ValidatorWithDatetime(json.load(f))
     for err in complete_order_schema.iter_errors(complete_data):
@@ -94,15 +110,10 @@ def validate_complete_orders(complete_data, couriers_db, orders_db):
     return complete_data, 200
 
 
-def validate_courier_id(courier_id, couriers_db: Couriers):
-    courier_id = int(courier_id)
-    if not couriers_db.get_item(courier_id):
-        return {'validation_error': f'There are no courier with id {courier_id}'}, 400
-    else:
-        return {}, 200
-
-
-def _validate_post_items(items_data, schema, item_name):
+def _validate_post_items(items_data: dict, schema: ValidatorWithDatetime, item_name: str) -> (dict, int):
+    """
+    Function validates couriers post data (item_name='courier') or orders post data (item_name='order')
+    """
     if schema.is_valid(items_data):
         return items_data, 201
 

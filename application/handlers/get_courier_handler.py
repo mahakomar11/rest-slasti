@@ -6,6 +6,10 @@ COURIER_COST = {'foot': 2, 'bike': 5, 'car': 9}
 
 
 def get_courier(courier_id, couriers_db: Couriers, orders_db: Orders):
+    """
+    Return 'courier_id', 'courier_type', 'regions', 'working_hours'.
+    If courier has completed orders, return 'rating' and 'earning' too
+    """
     courier_id = int(courier_id)
     courier = couriers_db.get_item(courier_id)
 
@@ -27,7 +31,7 @@ def get_courier(courier_id, couriers_db: Couriers, orders_db: Orders):
             'earning': earning}
 
 
-def _calculate_rating_and_earning(completed_orders):
+def _calculate_rating_and_earning(completed_orders: list[dict]) -> (float, int):
     # Calculate min of mean times through regions and earning
     t_regions = {}
     earning = 0
