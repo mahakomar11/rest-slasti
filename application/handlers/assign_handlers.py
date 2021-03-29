@@ -2,7 +2,7 @@ from copy import deepcopy
 from application.utils.datetime_utils import parse_interval
 from datetime import datetime
 from application.collections_db import Couriers, Orders
-from application.handlers.orders_utils import get_ids
+from application.utils.orders_utils import get_ids, update_orders, get_orders_weight
 
 COURIERS_CAPACITY = {'foot': 10, 'bike': 15, 'car': 50}
 
@@ -65,12 +65,12 @@ def assign_orders(courier_id_data, couriers_db: Couriers, orders_db: Orders):
     orders_to_place = []
     for interval in intervals:
         fitted_orders = orders_db.get_fitted_orders(interval[0], interval[1], courier['regions'])
-        orders_to_place = _update_orders(orders_to_place, fitted_orders)
+        orders_to_place = update_orders(orders_to_place, fitted_orders)
 
     # Put all possible new orders to courier's bag
     capacity = _get_courier_capacity(courier['courier_type'], assigned_orders)
     new_assigned_orders = _place_orders(orders_to_place, capacity)
-    assigned_orders = _update_orders(assigned_orders, new_assigned_orders)
+    assigned_orders = update_orders(assigned_orders, new_assigned_orders)
 
     # Write assigned orders to DB (if it is empty list, it is already in DB)
     if len(assigned_orders) != 0:
@@ -98,24 +98,8 @@ def _is_intervals_fitted(working_hours, delivery_intervals):
 
 def _get_courier_capacity(courier_type, assigned_orders):
     all_capacity = COURIERS_CAPACITY[courier_type]
-    orders_weight = _get_orders_weight(assigned_orders)
+    orders_weight = get_orders_weight(assigned_orders)
     return all_capacity - orders_weight
-
-
-def _get_orders_weight(orders):
-    if len(orders) != 0:
-        orders_weight = sum([order['weight'] for order in orders])
-    else:
-        orders_weight = 0
-    return orders_weight
-
-
-def _update_orders(orders, new_orders):
-    ids = [order['id'] for order in orders]  # TODO: get_ids
-    for new in new_orders:
-        if new['id'] not in ids:
-            orders.append(new)
-    return orders
 
 
 def _place_orders(orders, capacity):

@@ -79,7 +79,6 @@ def validate_complete_orders(complete_data, couriers_db, orders_db):
 
     # Check if the order is assigned to this courier
     assigned_orders = courier['assigned_orders']
-    print(assigned_orders)
     if {'id': order_id} not in assigned_orders:
         return {
                    'validation_error': f'order with id {order_id} is assigned to another courier'}, 400

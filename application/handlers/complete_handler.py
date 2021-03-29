@@ -1,6 +1,6 @@
 from application.utils.datetime_utils import str_to_datetime
 from application.collections_db import Couriers, Orders
-from application.handlers.orders_utils import get_ids
+from application.utils.orders_utils import get_ids
 from datetime import datetime
 
 

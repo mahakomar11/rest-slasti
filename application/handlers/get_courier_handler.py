@@ -1,4 +1,4 @@
-from application.handlers.orders_utils import get_ids
+from application.utils.orders_utils import get_ids
 from application.collections_db import Couriers, Orders
 from statistics import mean
 
