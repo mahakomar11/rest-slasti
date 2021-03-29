@@ -9,9 +9,8 @@ from application import validator
 from pymongo.database import Database
 
 
-# TODO: документация
-# TODO: сделать readmi
 # TODO: сделать requirements
+# TODO: сделать readmi
 # TODO: посмотреть видео и исправить хэндлеры в соответствие с ним
 def make_app(db: Database) -> Flask:
     """
