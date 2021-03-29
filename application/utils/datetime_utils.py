@@ -14,7 +14,7 @@ def str_to_datetime(t: str) -> datetime:
         return datetime.fromtimestamp(rfc3339_to_timestamp(t))
 
 
-def parse_intervals(hours: List[str]) -> List[Tuple[str, str]]:
+def parse_intervals(hours: List[str]) -> List[Tuple[int, int]]:
     """
     Get intervals in strings, ex. ["10:00-13:00"], return in minutes, [(600, 780)]
     """
