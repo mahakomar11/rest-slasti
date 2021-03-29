@@ -1,7 +1,7 @@
 from datetime import time, datetime
 from strict_rfc3339 import validate_rfc3339, rfc3339_to_timestamp
 from jsonschema import TypeChecker
-from typing import List
+from typing import List, Tuple
 
 
 def str_to_datetime(t: str) -> datetime:
@@ -14,7 +14,7 @@ def str_to_datetime(t: str) -> datetime:
         return datetime.fromtimestamp(rfc3339_to_timestamp(t))
 
 
-def parse_intervals(hours: List[str]) -> List[(str, str)]:
+def parse_intervals(hours: List[str]) -> List[Tuple[str, str]]:
     """
     Get intervals in strings, ex. ["10:00-13:00"], return in minutes, [(600, 780)]
     """
