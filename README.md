@@ -26,4 +26,4 @@ gunicorn -w 4 -b 0.0.0.0:8080 index:app
 
 Готово, сласти уже в пути!
 
-*Сервис был написан в качестве вступительного задания для [школы бэкенд-разработки Yandex](https://academy.yandex.ru/schools/backend?utm_source=yandex&utm_medium=email&utm_campaign=sendr-444809).* (за 5 дней :watch:)
+*Сервис был написан в качестве вступительного задания для [школы бэкенд-разработки Yandex](https://academy.yandex.ru/schools/backend?utm_source=yandex&utm_medium=email&utm_campaign=sendr-444809).
